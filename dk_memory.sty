@@ -1,0 +1,286 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{polski}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{array}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Gra Memory – Dokumentacja}
+\lhead{Seweryn Ładniak, Maciej Szrek}
+\cfoot{\thepage}
+\setlength{\headheight}{14pt}
+
+\title{\vspace{-2cm}Sprawozdanie z projektu\\ \textbf{Gra Memory (C++/wxWidgets)}}
+\author{Seweryn Ładniak, Maciej Szrek}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{center}
+{\large Projekt zaliczeniowy – Programowanie Obiektowe (Code::Blocks + wxWidgets)}
+\end{center}
+\vspace{0.3cm}
+
+\section*{Podział zadań w zespole}
+Projekt realizowany był zespołowo:
+\begin{itemize}
+    \item \textbf{Seweryn Ładniak}: implementacja logiki gry, testowanie, przygotowanie screenów, kompilacja programu, spakowanie EXE przez UPX.
+    \item \textbf{Maciej Szrek}: rozbudowa dokumentacji, przygotowanie szczegółowego opisu projektu, kontrola jakości oddawanych plików, weryfikacja zgodności z wymaganiami prowadzącego.
+\end{itemize}
+
+\tableofcontents
+\newpage
+
+%---------------------------------------------
+
+\section{Cel i założenia projektu}
+Celem projektu było samodzielne zaprojektowanie oraz implementacja klasycznej gry \textbf{Memory} (gra w pary), w języku C++ z użyciem biblioteki \textbf{wxWidgets}. Projekt miał sprawdzić praktyczne umiejętności programowania obiektowego, pracy z GUI oraz organizacji zespołowej. Ważnym celem była również nauka profesjonalnego przygotowania projektu pod kątem wymagań dydaktycznych – przenośność, zgodność z wytycznymi prowadzącego oraz przejrzysta dokumentacja.
+
+Podstawowe wymagania funkcjonalne:
+\begin{itemize}
+    \item Losowe rozmieszczenie kart na planszy (każda para w innym miejscu).
+    \item Obsługa kliknięć – odkrywanie kart, weryfikacja par.
+    \item Pary odkryte pozostają widoczne, nietrafione są zakrywane po krótkim czasie.
+    \item Zliczanie ruchów oraz pomiar czasu gry.
+    \item Okno z podsumowaniem po znalezieniu wszystkich par.
+    \item Przejrzysty interfejs graficzny, czytelne komunikaty.
+\end{itemize}
+
+\section{Opis działania gry}
+Gra Memory polega na odsłanianiu par zakrytych kart. Gracz odkrywa na planszy po dwie karty; jeśli są one identyczne – pozostają odkryte. Nietrafione karty po krótkim czasie są zakrywane z powrotem. Gra kończy się, gdy wszystkie pary zostaną odkryte, a program wyświetla podsumowanie liczby ruchów oraz czas rozgrywki.
+
+Ważniejsze aspekty logiki:
+\begin{itemize}
+    \item Program blokuje odkrywanie kolejnych kart do czasu rozstrzygnięcia obecnej tury (dwie karty naraz).
+    \item Odtwarzana jest logika tury – kolejne kliknięcie jest możliwe dopiero po rozpatrzeniu ostatniego ruchu (błędna para: odwrócenie po czasie).
+    \item Aplikacja nie pozwala odkrywać tej samej karty dwa razy w tej samej turze.
+    \item W momencie odkrycia ostatniej pary pojawia się komunikat podsumowujący: liczba ruchów i łączny czas.
+\end{itemize}
+
+\section{Architektura programu i podział na klasy}
+
+Projekt został podzielony na kilka kluczowych klas:
+
+\subsection*{1. Klasa \texttt{memorygraApp}}
+Odpowiada za cykl życia aplikacji, start programu oraz inicjalizację głównego okna.  
+\textbf{Metody:}
+\begin{itemize}
+    \item \texttt{OnInit()} – inicjalizuje aplikację, otwiera główne okno gry.
+\end{itemize}
+
+\subsection*{2. Klasa \texttt{memorygraMain}}
+Jest głównym oknem gry. Odpowiada za:
+\begin{itemize}
+    \item Tworzenie planszy z kartami (przyciski `wxButton` w siatce).
+    \item Losowanie rozmieszczenia kart.
+    \item Obsługę kliknięć na karty.
+    \item Zliczanie ruchów i czasu.
+    \item Obsługę końca gry i wyświetlanie podsumowania.
+\end{itemize}
+\textbf{Wybrane atrybuty:}
+\begin{itemize}
+    \item \texttt{std::vector<wxButton*> cards;} – kontener ze wszystkimi przyciskami (kartami).
+    \item \texttt{wxButton* firstCard;} – wskaźnik na pierwszą odsłoniętą kartę w turze.
+    \item \texttt{wxButton* secondCard;} – wskaźnik na drugą kartę w turze.
+    \item \texttt{wxTimer* flipBackTimer;} – timer do odwracania błędnych par.
+    \item \texttt{int moveCount;} – liczba wykonanych ruchów.
+    \item \texttt{time\_t startTime;} – czas rozpoczęcia gry.
+\end{itemize}
+\textbf{Główne metody:}
+\begin{itemize}
+    \item \texttt{void OnCardClick(wxCommandEvent\& event);} – obsługa kliknięcia na kartę.
+    \item \texttt{void CheckForMatch();} – sprawdza, czy dwie odsłonięte karty stanowią parę.
+    \item \texttt{void FlipBack();} – odwraca nietrafione karty po upływie czasu.
+    \item \texttt{bool AllCardsMatched();} – sprawdza, czy wszystkie karty są już odkryte.
+    \item \texttt{void ShowWinDialog();} – wyświetla okno podsumowania po zakończeniu gry.
+\end{itemize}
+
+\subsection*{3. Zarządzanie zasobami i konfiguracją}
+Projekt korzysta z pliku zasobów \texttt{resource.rc}, który dołącza ikonę programu oraz plik \texttt{wx/msw/wx.rc} dla prawidłowego działania wxWidgets na Windows.  
+Ikona jest ustawiona za pomocą wpisu w resource.rc:
+\begin{verbatim}
+IDI_ICON1 ICON "memory.ico"
+#include "wx/msw/wx.rc"
+\end{verbatim}
+
+Wszystkie ścieżki do wxWidgets w pliku projektu są podawane przez zmienną globalną \texttt{\$(\#wx)}, co zapewnia przenośność projektu.
+
+\section{Tabela testów i scenariuszy}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|p{4cm}|p{5cm}|p{4cm}|}
+\hline
+\textbf{Test} & \textbf{Oczekiwany rezultat} & \textbf{Wynik} \\
+\hline
+Poprawne odkrywanie par & Odsłonięte identyczne karty zostają odkryte & OK \\
+Błędne pary & Nietrafione karty zakrywają się po sekundzie & OK \\
+Kliknięcia szybkie i powtórzone & Nie można odsłonić więcej niż 2 kart na raz & OK \\
+Podwójny klik tej samej karty & Blokada ponownego wyboru tej samej karty w turze & OK \\
+Zakończenie gry & Pojawia się podsumowanie z czasem i ruchem & OK \\
+\hline
+\end{tabular}
+\caption{Tabela wybranych testów gry Memory}
+\end{table}
+
+
+\section{Opis interfejsu użytkownika}
+
+Aplikacja posiada intuicyjny interfejs graficzny zbudowany na bazie komponentów wxWidgets:
+\begin{itemize}
+    \item plansza gry z siatką przycisków-kart,
+    \item licznik ruchów i licznik czasu,
+    \item komunikaty o błędnych ruchach i zwycięstwie,
+    \item możliwość zamknięcia gry w dowolnym momencie.
+\end{itemize}
+
+\subsection*{Ekran startowy}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{screenshot2.png}
+    \caption{Okno startowe gry Memory (wszystkie karty zakryte).}
+    \label{fig:start}
+\end{figure}
+
+\subsection*{Komunikat zwycięstwa}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{Screenshot_1.png}
+    \caption{Podsumowanie po zakończeniu gry – liczba ruchów i czas.}
+    \label{fig:win}
+\end{figure}
+
+\section{Instrukcja budowania i uruchamiania programu}
+
+\begin{itemize}
+    \item System operacyjny: Windows 10/11 (zalecane)
+    \item Code::Blocks z pluginem wxSmith
+    \item Biblioteka wxWidgets 3.2.8 (skompilowana na lokalnym komputerze)
+    \item Program UPX do pakowania plików wykonywalnych
+\end{itemize}
+
+Kroki budowania:
+\begin{enumerate}
+    \item Skonfiguruj zmienną globalną \texttt{wx} w Code::Blocks – ustaw ją na katalog wxWidgets 3.2.8.
+    \item Otwórz plik \texttt{memorygra.cbp} w Code::Blocks.
+    \item Sprawdź ustawienia ścieżek w projekcie – muszą być wpisy typu \texttt{\$(\#wx)\textbackslash include}
+.
+    \item W menu Build wybierz \textbf{Release}, kliknij \textbf{Rebuild}.
+    \item Po poprawnej kompilacji plik \texttt{memorygra.exe} będzie w \texttt{bin/Release/}.
+    \item Skopiuj plik \texttt{memorygra.exe} do folderu z UPX i wpisz w terminalu: \texttt{upx --best memorygra.exe}
+    \item Przetestuj EXE na komputerze bez wxWidgets.
+\end{enumerate}
+
+\section{Lessons learned i wnioski końcowe}
+Projekt nauczył nas nie tylko programowania obiektowego i pracy z bibliotekami GUI, ale także dobrych praktyk inżynierskich:  
+- znaczenia czystości projektu i przenośności (zmienne globalne, brak śmieci w ZIPie),
+- profesjonalnej komunikacji w zespole,
+- umiejętności przygotowania projektu pod rygorystyczne wymagania formalne (czytelność, wersjonowanie, czyszczenie projektu).
+
+\section{Podsumowanie i refleksje zespołu}
+
+Projekt gry Memory w środowisku C++/wxWidgets okazał się nie tylko wyzwaniem programistycznym, ale również ciekawym doświadczeniem pracy zespołowej, inżynierskiej i organizacyjnej. Poniżej zamieszczamy szerokie podsumowanie naszych działań, wniosków oraz inspiracji na przyszłość.
+
+\subsection*{Wkład pracy własnej}
+
+Projekt wymagał od nas samodzielnego przemyślenia całej architektury, podziału obowiązków, bieżącej komunikacji oraz szybkiego reagowania na zmieniające się wytyczne prowadzącego. Od pierwszych ustaleń dotyczących wyboru technologii, przez uzgadnianie podziału ról, aż po wielokrotne testy i poprawki – każda faza realizacji projektu rozwijała nasze umiejętności techniczne i interpersonalne.
+
+W toku prac opanowaliśmy m.in.:
+\begin{itemize}
+    \item tworzenie aplikacji desktopowej z własnym GUI na bazie bibliotek wxWidgets,
+    \item efektywne wykorzystanie wzorców programowania obiektowego,
+    \item zarządzanie zasobami projektu (ścieżki, pliki, ikony, zasoby \texttt{rc}),
+    \item organizację kodu pod kątem łatwości rozbudowy i testowania,
+    \item rozwiązywanie problemów kompilacyjnych i konfiguracyjnych w Code::Blocks,
+    \item przygotowanie kodu pod statyczne linkowanie oraz pakowanie UPX,
+    \item dokumentowanie pracy własnej z myślą o czytelniku, prowadzącym i innych programistach.
+\end{itemize}
+
+\subsection*{Współpraca i komunikacja w zespole}
+
+Szczególnie istotna była dla nas kwestia podziału ról i komunikacji:
+\begin{itemize}
+    \item \textbf{Seweryn} był odpowiedzialny głównie za implementację logiki gry, testy, przygotowanie zrzutów ekranu oraz końcową kompilację projektu,
+    \item \textbf{Maciej} przejął zadania związane z rozbudową dokumentacji, analizą wymagań oraz końcową kontrolą jakości i spójności projektu.
+\end{itemize}
+
+Wspólnie podejmowaliśmy decyzje o implementacji, sposobie testowania i finalnej postaci dokumentacji. Wielokrotnie wymienialiśmy się plikami (np. przez maila lub repozytorium), konsultując nawet drobne szczegóły, by efekt końcowy spełniał oczekiwania dydaktyczne i praktyczne.
+
+\subsection*{Problemy i ich rozwiązywanie}
+
+Projekt nie był pozbawiony trudności – na różnych etapach pojawiły się m.in.:
+\begin{itemize}
+    \item Problemy z konfiguracją środowiska i ścieżkami do bibliotek,
+    \item Kłopoty z poprawnym statycznym linkowaniem wxWidgets,
+    \item Nieoczywiste błędy związane z kodowaniem plików (UTF-8 vs. Windows-1250),
+    \item Konieczność wielokrotnego czyszczenia projektu (usuwanie śmieci, plików binarnych, backupów),
+    \item Synchronizacja plików i wersji, by uniknąć konfliktów przy oddawaniu,
+    \item Zgodność plików graficznych (screenów) z formatem wymaganym przez LaTeX.
+\end{itemize}
+
+Każde z tych wyzwań nauczyło nas czegoś nowego – od czysto inżynierskich „myków”, przez praktyczne podejście do wersjonowania i porządkowania projektu, po lepszą komunikację w zespole.
+
+\subsection*{Nauka i inspiracje na przyszłość}
+
+W trakcie projektu nauczyliśmy się:
+\begin{itemize}
+    \item Jak projektować prostą, ale użyteczną architekturę klasycznej gry z zachowaniem czytelności i modularności kodu,
+    \item Jak zarządzać większym projektem C++ w Code::Blocks i dbać o przenośność,
+    \item Jak przygotować pełną, zrozumiałą dokumentację techniczną z przykładami kodu, screenami, opisami i instrukcją obsługi,
+    \item Jak rozwiązywać realne, nieopisane w podręcznikach problemy – np. z dziwnymi znakami, niekompatybilnością pluginów, kodowaniem czy linkowaniem,
+    \item Jak pracować zespołowo w trybie „zdalnym”, wymieniając się kodem, testami i poprawkami,
+    \item Jak skutecznie czyścić i finalizować projekt do oddania na uczelnię.
+\end{itemize}
+
+Dodatkowo zdobyte umiejętności i wypracowane praktyki z pewnością przełożą się na nasze przyszłe projekty – zarówno na studiach, jak i w pracy zawodowej.
+
+\subsection*{Propozycje rozwoju gry i projektu}
+
+Choć oddajemy grę w wersji bazowej, widzimy szerokie możliwości jej dalszego rozwoju:
+\begin{itemize}
+    \item dodanie trybu dla wielu graczy (z rankingiem i zapisem wyników),
+    \item rozbudowanie efektów graficznych oraz animacji przewracania kart,
+    \item wprowadzenie poziomów trudności, wyboru rozmiaru planszy lub liczby par,
+    \item przygotowanie wersji sieciowej z możliwością gry online,
+    \item dodanie opcji „undo”, automatycznego zapisywania stanu gry,
+    \item integracja z bazą danych wyników lub statystyk.
+\end{itemize}
+
+\subsection*{Podsumowanie końcowe}
+
+Podsumowując – projekt był bardzo wartościowym doświadczeniem, które pokazało nam, jak wiele różnych kompetencji można zdobyć i rozwinąć podczas pracy nad (pozornie prostą) aplikacją zespołową. Doceniamy wartość dobrze napisanej dokumentacji, czystości repozytorium oraz sensownego podziału obowiązków. Wierzymy, że nasza praca spełnia wymogi dydaktyczne i będzie czytelna oraz przydatna także dla innych studentów w przyszłości.
+
+\vspace{1cm}
+\noindent
+\textbf{Seweryn Ładniak} \hfill \textbf{Maciej Szrek}
+
+
+Największym wyzwaniem okazało się przygotowanie środowiska do statycznej kompilacji oraz synchronizacja działań zespołu przy końcowym etapie oddawania projektu.
+
+W przyszłości warto rozważyć:
+\begin{itemize}
+    \item Implementację trybu dla wielu graczy z zapisem wyników.
+    \item Dodatkowe efekty graficzne lub animacje.
+    \item Możliwość wyboru poziomu trudności (więcej par, większa plansza).
+    \item Implementację wersji sieciowej z rankingiem online.
+\end{itemize}
+
+\section*{Załączniki}
+\begin{itemize}
+    \item Kod źródłowy (\texttt{.cpp}, \texttt{.h}, \texttt{.cbp})
+    \item Plik zasobów \texttt{resource.rc}, ikona \texttt{memory.ico}
+    \item Dokumentacja (\texttt{sprawozdanie.pdf}), screeny (\texttt{screens/})
+\end{itemize}
+
+\section*{Podpisy}
+\vspace{1cm}
+\textbf{Seweryn Ładniak} \hfill \textbf{Maciej Szrek}
+
+\end{document}
