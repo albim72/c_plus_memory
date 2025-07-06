@@ -1,0 +1,8 @@
+\contentsline {section}{\numberline {1}Cel i założenia projektu}{2}{section.1}%
+\contentsline {section}{\numberline {2}Opis działania gry}{2}{section.2}%
+\contentsline {section}{\numberline {3}Architektura programu i podział na klasy}{2}{section.3}%
+\contentsline {section}{\numberline {4}Tabela testów i scenariuszy}{3}{section.4}%
+\contentsline {section}{\numberline {5}Opis interfejsu użytkownika}{3}{section.5}%
+\contentsline {section}{\numberline {6}Instrukcja budowania i uruchamiania programu}{4}{section.6}%
+\contentsline {section}{\numberline {7}Lessons learned i wnioski końcowe}{5}{section.7}%
+\contentsline {section}{\numberline {8}Podsumowanie i refleksje zespołu}{5}{section.8}%
